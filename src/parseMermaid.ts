@@ -1,9 +1,16 @@
-import mermaid from "mermaid";
 import { Graph, GraphImage } from "./interfaces.js";
 import { DEFAULT_FONT_SIZE } from "./constants.js";
 import { MermaidOptions } from "./index.js";
 import { isSupportedDiagram } from "./utils.js";
 import { parseMermaidFlowChartDiagram } from "./parser/flowchart.js";
+
+declare global {
+  interface Window {
+    mermaid: any;
+  }
+}
+
+const mermaid = window.mermaid;
 
 interface MermaidDefinitionOptions {
   curve?: "linear" | "basis";
@@ -71,7 +78,7 @@ export const parseMermaid = async (
   definition: string,
   options: MermaidOptions = {}
 ): Promise<Graph | GraphImage> => {
-  mermaid.initialize({ startOnLoad: false });
+  //mermaid.initialize({ startOnLoad: false });
 
   const fullDefinition = processMermaidTextWithOptions(definition, {
     curve: isSupportedDiagram(definition) ? "linear" : "basis",

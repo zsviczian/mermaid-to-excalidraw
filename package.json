@@ -1,6 +1,6 @@
 {
-  "name": "@excalidraw/mermaid-to-excalidraw",
-  "version": "0.1.1",
+  "name": "@zsviczian/mermaid-to-excalidraw",
+  "version": "0.1.1-obsidian-3",
   "description": "Mermaid to Excalidraw Diagrams",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,6 +12,9 @@
   "files": [
     "dist/*"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "scripts": {
     "build": "rimraf ./dist && cross-env tsc -b src",
@@ -21,7 +24,6 @@
   },
   "dependencies": {
     "@excalidraw/markdown-to-text": "0.1.2",
-    "mermaid": "10.2.3",
     "nanoid": "4.0.2",
     "cross-env": "^7.0.3"
   },
