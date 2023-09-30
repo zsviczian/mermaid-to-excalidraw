@@ -1,16 +1,16 @@
+//import mermaid from "mermaid"; //zsviczian
 import { Graph, GraphImage } from "./interfaces.js";
 import { DEFAULT_FONT_SIZE } from "./constants.js";
 import { MermaidOptions } from "./index.js";
 import { isSupportedDiagram } from "./utils.js";
 import { parseMermaidFlowChartDiagram } from "./parser/flowchart.js";
+import { replaceSVGStyle } from "./obsidianUtil.js"; //zsviczian
 
 declare global {
   interface Window {
     mermaid: any;
   }
 }
-
-const mermaid = window.mermaid;
 
 interface MermaidDefinitionOptions {
   curve?: "linear" | "basis";
@@ -84,11 +84,11 @@ export const parseMermaid = async (
     curve: isSupportedDiagram(definition) ? "linear" : "basis",
     fontSize: options.fontSize,
   });
-  // Parse the diagram
-  const diagram = await mermaid.mermaidAPI.getDiagramFromText(fullDefinition);
+  // Parse the diagram //zsviczian
+  const diagram = await window.mermaid.mermaidAPI.getDiagramFromText(fullDefinition);
 
-  // Render the SVG diagram
-  const { svg } = await mermaid.render("mermaid-to-excalidraw", fullDefinition);
+  // Render the SVG diagram //zsviczian
+  const { svg } = await window.mermaid.render("mermaid-to-excalidraw", fullDefinition);
 
   // Append Svg to DOM
   const svgContainer = document.createElement("div");
@@ -96,7 +96,7 @@ export const parseMermaid = async (
     "style",
     `opacity: 0; position: relative; z-index: -1;`
   );
-  svgContainer.innerHTML = svg;
+  svgContainer.innerHTML = replaceSVGStyle(svg); //zsviczian
   svgContainer.id = "mermaid-diagram";
   document.body.appendChild(svgContainer);
 
