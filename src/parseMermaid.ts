@@ -96,7 +96,7 @@ export const parseMermaid = async (
     "style",
     `opacity: 0; position: relative; z-index: -1;`
   );
-  svgContainer.innerHTML = replaceSVGStyle(svg); //zsviczian
+  svgContainer.innerHTML = replaceSVGStyle(svg, diagram.type); //zsviczian
   svgContainer.id = "mermaid-diagram";
   document.body.appendChild(svgContainer);
 
