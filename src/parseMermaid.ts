@@ -1,42 +1,16 @@
 //import mermaid from "mermaid"; //zsviczian
-import { Graph, GraphImage } from "./interfaces.js";
-import { DEFAULT_FONT_SIZE } from "./constants.js";
-import { MermaidOptions } from "./index.js";
-import { isSupportedDiagram } from "./utils.js";
-import { parseMermaidFlowChartDiagram } from "./parser/flowchart.js";
+import { GraphImage } from "./interfaces.js";
+//import { DEFAULT_FONT_SIZE } from "./constants.js"; //zsviczian
+import { encodeEntities } from "./utils.js";
+import { Flowchart, parseMermaidFlowChartDiagram } from "./parser/flowchart.js";
+import { Sequence, parseMermaidSequenceDiagram } from "./parser/sequence.js";
 import { replaceSVGStyle } from "./obsidianUtil.js"; //zsviczian
 
-declare global {
+declare global { //zsviczian
   interface Window {
     mermaid: any;
   }
 }
-
-interface MermaidDefinitionOptions {
-  curve?: "linear" | "basis";
-  fontSize?: number;
-}
-
-const processMermaidTextWithOptions = (
-  definition: string,
-  options?: MermaidDefinitionOptions
-) => {
-  const diagramInitOptions = {
-    // Add options for rendering flowchart in linear curves (for better extracting arrow path points) and custom font size
-    flowchart: {
-      curve: options?.curve || "basis",
-    },
-    // Increase the Mermaid's font size by multiplying with 1.25 to match the Excalidraw Virgil font
-    themeVariables: {
-      fontSize: `${(options?.fontSize || DEFAULT_FONT_SIZE) * 1.25}px`,
-    },
-  };
-  const fullDefinition = `%%{init: ${JSON.stringify(
-    diagramInitOptions
-  )}}%%\n${definition}`;
-
-  return fullDefinition;
-};
 
 // Fallback to Svg
 const convertSvgToGraphImage = (svgContainer: HTMLDivElement) => {
@@ -75,20 +49,23 @@ const convertSvgToGraphImage = (svgContainer: HTMLDivElement) => {
 };
 
 export const parseMermaid = async (
-  definition: string,
-  options: MermaidOptions = {}
-): Promise<Graph | GraphImage> => {
-  //mermaid.initialize({ startOnLoad: false });
+  definition: string
+): Promise<Flowchart | GraphImage | Sequence> => {
+  /*mermaid.initialize({
+    startOnLoad: false,
+    flowchart: { curve: "linear" },
+    themeVariables: {
+      fontSize: `${DEFAULT_FONT_SIZE * 1.25}px`,
+    },
+  });*/ //zsviczian
 
-  const fullDefinition = processMermaidTextWithOptions(definition, {
-    curve: isSupportedDiagram(definition) ? "linear" : "basis",
-    fontSize: options.fontSize,
-  });
   // Parse the diagram //zsviczian
-  const diagram = await window.mermaid.mermaidAPI.getDiagramFromText(fullDefinition);
+  const diagram = await window.mermaid.mermaidAPI.getDiagramFromText(
+    encodeEntities(definition)
+  );
 
   // Render the SVG diagram //zsviczian
-  const { svg } = await window.mermaid.render("mermaid-to-excalidraw", fullDefinition);
+  const { svg } = await window.mermaid.render("mermaid-to-excalidraw", definition);
 
   // Append Svg to DOM
   const svgContainer = document.createElement("div");
@@ -104,6 +81,12 @@ export const parseMermaid = async (
   switch (diagram.type) {
     case "flowchart-v2": {
       data = parseMermaidFlowChartDiagram(diagram, svgContainer);
+      break;
+    }
+
+    case "sequence": {
+      data = parseMermaidSequenceDiagram(diagram, svgContainer);
+
       break;
     }
     // fallback to image if diagram type not-supported
