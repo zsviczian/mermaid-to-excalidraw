@@ -6,9 +6,10 @@ export interface MermaidOptions {
 }
 const parseMermaidToExcalidraw = async (
   definition: string,
-  options: MermaidOptions = {}
+  options: MermaidOptions = {},
+  forceSVG: boolean = false, //zsviczian
 ) => {
-  const parsedMermaidData = await parseMermaid(definition);
+  const parsedMermaidData = await parseMermaid(definition, forceSVG, options); //zsviczian
   const excalidrawElements = graphToExcalidraw(parsedMermaidData, options);
   return excalidrawElements;
 };
