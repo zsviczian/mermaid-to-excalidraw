@@ -377,7 +377,7 @@ const createActorSymbol = (
   return nodeElements;
 };
 
-const parseActor = (actors: { [key: string]: Actor }, containerEl: Element) => {
+const parseActor_old = (actors: { [key: string]: Actor }, containerEl: Element) => {
   const actorRootNodes = Array.from(containerEl.querySelectorAll(".actor"))
     .filter((node) => node.tagName === "text")
     .map((actor) => actor.tagName === "text" && actor.parentElement);
@@ -444,6 +444,98 @@ const parseActor = (actors: { [key: string]: Actor }, containerEl: Element) => {
 
       // Get the line connecting the top and bottom nodes. As per the DOM, the line is rendered as first child of parent element
       const lineNode = topRootNode.previousElementSibling as SVGLineElement;
+
+      if (lineNode?.tagName !== "line") {
+        throw "Line not found";
+      }
+      const startX = Number(lineNode.getAttribute("x1"));
+      const startY = Number(lineNode.getAttribute("y1"));
+
+      const endX = Number(lineNode.getAttribute("x2"));
+      // Make sure lines don't overlap with the nodes, in mermaid it overlaps but isn't visible as its pushed back and containers are non transparent
+      const bottomEllipseNode = bottomNodeElement.find(
+        (node): node is Container => node.type === "ellipse"
+      );
+      if (bottomEllipseNode) {
+        const endY = bottomEllipseNode.y;
+        const line = createLineElement(lineNode, startX, startY, endX, endY);
+        lines.push(line);
+      }
+    }
+  });
+
+  return { nodes, lines };
+};
+
+const parseActor = (actors: { [key: string]: Actor }, containerEl: Element) => {
+  //@ts-ignore
+  if(!window.ExcalidrawAutomate.obsidian.requireApiVersion("1.5.0")) return parseActor_old(actors, containerEl);
+  const actorRootNodes = Array.from(containerEl.querySelectorAll(".actor"))
+    .filter((node) => node.tagName === "text")
+    .map((actor) => actor.tagName === "text" && actor.parentElement);
+  const lineNodes = containerEl.querySelectorAll("line"); //zsviczian
+  const nodes: Array<Node[]> = [];
+  const lines: Array<Line> = [];
+  const actorsLength = Object.keys(actors).length;
+  Object.values(actors).forEach((actor, index) => {
+    //@ts-ignore
+    // For each actor there are two nodes top and bottom which is connected by a line
+    const topRootNode = actorRootNodes[index] as SVGGElement;
+    //@ts-ignore
+    const bottomRootNode = actorRootNodes[actorsLength + index] as SVGGElement;
+
+    if (!topRootNode) {
+      throw "root not found";
+    }
+    const text = actor.description;
+    if (actor.type === "participant") {
+      // creating top actor node element
+      const topNodeElement = createContainerElement(
+        topRootNode.firstChild as SVGSVGElement,
+        "rectangle",
+        { id: `${actor.name}-top`, text, subtype: "actor" }
+      );
+      if (!topNodeElement) {
+        throw "Top Node element not found!";
+      }
+      nodes.push([topNodeElement]);
+
+      // creating bottom actor node element
+      const bottomNodeElement = createContainerElement(
+        bottomRootNode.firstChild as SVGSVGElement,
+        "rectangle",
+        { id: `${actor.name}-bottom`, text, subtype: "actor" }
+      );
+      nodes.push([bottomNodeElement]);
+
+      // Get the line connecting the top and bottom nodes. As per the DOM, the line is rendered as first child of parent element
+      const lineNode = lineNodes[index]; //zsviczian
+
+      if (lineNode?.tagName !== "line") {
+        throw "Line not found";
+      }
+      const startX = Number(lineNode.getAttribute("x1"));
+      if (!bottomNodeElement.height) { //zsviczian
+        throw "Bottom node element height is null";
+      }
+      const startY = topNodeElement.y;
+      // Make sure lines don't overlap with the nodes, in mermaid it overlaps but isn't visible as its pushed back and containers are non transparent
+      const endY = bottomNodeElement.y + bottomNodeElement.height; //zsviczian
+      const endX = Number(lineNode.getAttribute("x2"));
+      const line = createLineElement(lineNode, startX, startY, endX, endY);
+      lines.push(line);
+    } else if (actor.type === "actor") {
+      const topNodeElement = createActorSymbol(topRootNode, text, {
+        id: `${actor.name}-top`,
+      });
+      nodes.push(topNodeElement);
+      const bottomNodeElement = createActorSymbol(bottomRootNode, text, {
+        id: `${actor.name}-bottom`,
+      });
+      nodes.push(bottomNodeElement);
+
+      // Get the line connecting the top and bottom nodes. As per the DOM, the line is rendered as first child of parent element
+      const lineNode = lineNodes[index]; //zsviczian
 
       if (lineNode?.tagName !== "line") {
         throw "Line not found";

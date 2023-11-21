@@ -50,47 +50,31 @@ const convertSvgToGraphImage = (svgContainer: HTMLDivElement) => {
   return graphImage;
 };
 
-const processMermaidTextWithOptions = ( //zsviczian (otherwise text size was not correct)
-  definition: string,
-  options?: MermaidOptions
-) => {
-  const diagramInitOptions = {
-    // Add options for rendering flowchart in linear curves (for better extracting arrow path points) and custom font size
-    flowchart: { curve: "linear" },
-    // Increase the Mermaid's font size by multiplying with 1.25 to match the Excalidraw Virgil font
-    themeVariables: {
-      fontSize: `${(options?.fontSize || DEFAULT_FONT_SIZE) * 1.25}px`,
-    },
-  };
-  const fullDefinition = `%%{init: ${JSON.stringify(
-    diagramInitOptions
-  )}}%%\n${definition}`;
-
-  return fullDefinition;
-};
-
 export const parseMermaid = async (
   definition: string,
   forceSVG: boolean = false, //zsviczian
   options: MermaidOptions = {}, //zsviczian
 ): Promise<Flowchart | GraphImage | Sequence> => {
-  /*mermaid.initialize({
-    startOnLoad: false,
+  const existingConfig = window.mermaid.mermaidAPI.getConfig();//zsviczian
+  const curve = existingConfig.flowchart.curve; //zsviczian
+  const fontSize = existingConfig.themeVariables.fontSize; //zsviczian
+  window.mermaid.initialize({
+    //startOnLoad: false, //zsviczian
     flowchart: { curve: "linear" },
     themeVariables: {
-      fontSize: `${DEFAULT_FONT_SIZE * 1.25}px`,
+      fontSize: `${(options?.fontSize || DEFAULT_FONT_SIZE) * 1.25}px`,
     },
-  });*/ //zsviczian
+  });
 
-  // Parse the diagram //zsviczian
-  const fullDefinition = processMermaidTextWithOptions(definition, options); //zsviczian
-  const diagram = await window.mermaid.mermaidAPI.getDiagramFromText(
-    encodeEntities(fullDefinition) //zsviczian
+  const diagram = await window.mermaid.mermaidAPI.getDiagramFromText( //zsviczian
+    encodeEntities(definition)
   );
 
-  // Render the SVG diagram //zsviczian
-  const { svg } = await window.mermaid.render("mermaid-to-excalidraw", fullDefinition); //zsviczian
+  // Render the SVG diagram
+  const { svg } = await window.mermaid.render("mermaid-to-excalidraw", definition); //zsviczian
 
+  
+  window.mermaid.initialize({ flowchart: { curve }, themeVariables: { fontSize} }); //zsviczian
   // Append Svg to DOM
   const svgContainer = document.createElement("div");
   svgContainer.setAttribute(
