@@ -4,6 +4,7 @@ import { GraphImage } from "./interfaces.js";
 import { encodeEntities } from "./utils.js";
 import { Flowchart, parseMermaidFlowChartDiagram } from "./parser/flowchart.js";
 import { Sequence, parseMermaidSequenceDiagram } from "./parser/sequence.js";
+import { Class, parseMermaidClassDiagram } from "./parser/class.js";
 import { replaceSVGStyle } from "./obsidianUtil.js"; //zsviczian
 import { MermaidOptions } from "./index.js";
 import { DEFAULT_FONT_SIZE } from "./constants.js";
@@ -54,7 +55,7 @@ export const parseMermaid = async (
   definition: string,
   forceSVG: boolean = false, //zsviczian
   options: MermaidOptions = {}, //zsviczian
-): Promise<Flowchart | GraphImage | Sequence> => {
+): Promise<Flowchart | GraphImage | Sequence | Class> => {
   const existingConfig = window.mermaid.mermaidAPI.getConfig();//zsviczian
   const curve = existingConfig.flowchart.curve; //zsviczian
   const fontSize = existingConfig.themeVariables.fontSize; //zsviczian
@@ -96,6 +97,11 @@ export const parseMermaid = async (
     case "sequence": {
       data = parseMermaidSequenceDiagram(diagram, svgContainer);
 
+      break;
+    }
+
+    case "classDiagram": {
+      data = parseMermaidClassDiagram(diagram, svgContainer);
       break;
     }
     // fallback to image if diagram type not-supported
