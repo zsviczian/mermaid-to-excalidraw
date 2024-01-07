@@ -56,10 +56,12 @@ export const parseMermaid = async (
   forceSVG: boolean = false, //zsviczian
   options: MermaidOptions = {}, //zsviczian
 ): Promise<Flowchart | GraphImage | Sequence | Class> => {
-  const existingConfig = window.mermaid.mermaidAPI.getConfig();//zsviczian
+  //@ts-ignore //zsviczian
+  const mermaid = app.plugins.plugins["obsidian-excalidraw-plugin"].window.mermaid;
+  const existingConfig = mermaid.mermaidAPI.getConfig();//zsviczian
   const curve = existingConfig.flowchart.curve; //zsviczian
   const fontSize = existingConfig.themeVariables.fontSize; //zsviczian
-  window.mermaid.initialize({
+  mermaid.initialize({
     //startOnLoad: false, //zsviczian
     flowchart: { curve: "linear" },
     themeVariables: {
@@ -67,15 +69,15 @@ export const parseMermaid = async (
     },
   });
 
-  const diagram = await window.mermaid.mermaidAPI.getDiagramFromText( //zsviczian
+  const diagram = await mermaid.mermaidAPI.getDiagramFromText( //zsviczian
     encodeEntities(definition)
   );
 
   // Render the SVG diagram
-  const { svg } = await window.mermaid.render("mermaid-to-excalidraw", definition); //zsviczian
+  const { svg } = await mermaid.render("mermaid-to-excalidraw", definition); //zsviczian
 
   
-  window.mermaid.initialize({ flowchart: { curve }, themeVariables: { fontSize} }); //zsviczian
+  mermaid.initialize({ flowchart: { curve }, themeVariables: { fontSize} }); //zsviczian
   // Append Svg to DOM
   const svgContainer = document.createElement("div");
   svgContainer.setAttribute(
