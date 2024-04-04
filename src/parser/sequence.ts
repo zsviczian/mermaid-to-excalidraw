@@ -208,108 +208,6 @@ const createActorSymbol = (
   return nodeElements;
 };
 
-const parseActor_old = (actors: { [key: string]: Actor }, containerEl: Element) => {
-  const actorRootNodes = Array.from(
-    containerEl.querySelectorAll<SVGElement>(".actor")
-  )
-    .filter((node) => node.tagName === "text")
-    .map((actor) => actor.parentElement);
-
-  const nodes: Array<Node[]> = [];
-  const lines: Array<Line> = [];
-  const actorsLength = Object.keys(actors).length;
-  Object.values(actors).forEach((actor, index) => {
-    // For each actor there are two nodes top and bottom which is connected by a line
-    const topRootNode = actorRootNodes[index];
-    const bottomRootNode = actorRootNodes[actorsLength + index];
-
-    if (!topRootNode || !bottomRootNode) {
-      throw "root not found";
-    }
-    const text = actor.description;
-    if (actor.type === "participant") {
-      // creating top actor node element
-      const topNodeElement = createContainerSkeletonFromSVG(
-        topRootNode.firstChild as SVGSVGElement,
-        "rectangle",
-        { id: `${actor.name}-top`, label: { text }, subtype: "actor" }
-      );
-      if (!topNodeElement) {
-        throw "Top Node element not found!";
-      }
-      nodes.push([topNodeElement]);
-
-      // creating bottom actor node element
-      const bottomNodeElement = createContainerSkeletonFromSVG(
-        bottomRootNode.firstChild as SVGSVGElement,
-        "rectangle",
-        { id: `${actor.name}-bottom`, label: { text }, subtype: "actor" }
-      );
-      nodes.push([bottomNodeElement]);
-
-      // Get the line connecting the top and bottom nodes. As per the DOM, the line is rendered as first child of parent element
-      const lineNode = topRootNode.previousElementSibling as SVGLineElement;
-
-      if (lineNode?.tagName !== "line") {
-        throw "Line not found";
-      }
-      const startX = Number(lineNode.getAttribute("x1"));
-      if (!topNodeElement.height) {
-        throw "Top node element height is null";
-      }
-      const startY = topNodeElement.y + topNodeElement.height;
-      // Make sure lines don't overlap with the nodes, in mermaid it overlaps but isn't visible as its pushed back and containers are non transparent
-      const endY = bottomNodeElement.y;
-      const endX = Number(lineNode.getAttribute("x2"));
-      const line = createLineSkeletonFromSVG(
-        lineNode,
-        startX,
-        startY,
-        endX,
-        endY
-      );
-      lines.push(line);
-    } else if (actor.type === "actor") {
-      const topNodeElement = createActorSymbol(topRootNode, text, {
-        id: `${actor.name}-top`,
-      });
-      nodes.push(topNodeElement);
-      const bottomNodeElement = createActorSymbol(bottomRootNode, text, {
-        id: `${actor.name}-bottom`,
-      });
-      nodes.push(bottomNodeElement);
-
-      // Get the line connecting the top and bottom nodes. As per the DOM, the line is rendered as first child of parent element
-      const lineNode = topRootNode.previousElementSibling as SVGLineElement;
-
-      if (lineNode?.tagName !== "line") {
-        throw "Line not found";
-      }
-      const startX = Number(lineNode.getAttribute("x1"));
-      const startY = Number(lineNode.getAttribute("y1"));
-
-      const endX = Number(lineNode.getAttribute("x2"));
-      // Make sure lines don't overlap with the nodes, in mermaid it overlaps but isn't visible as its pushed back and containers are non transparent
-      const bottomEllipseNode = bottomNodeElement.find(
-        (node): node is Container => node.type === "ellipse"
-      );
-      if (bottomEllipseNode) {
-        const endY = bottomEllipseNode.y;
-        const line = createLineSkeletonFromSVG(
-          lineNode,
-          startX,
-          startY,
-          endX,
-          endY
-        );
-        lines.push(line);
-      }
-    }
-  });
-
-  return { nodes, lines };
-};
-
 const parseActor = (actors: { [key: string]: Actor }, containerEl: Element) => {
   //@ts-ignore //zsviczian
   if(!window.ExcalidrawAutomate.obsidian.requireApiVersion("1.5.0")) return parseActor_old(actors, containerEl);
@@ -386,6 +284,108 @@ const parseActor = (actors: { [key: string]: Actor }, containerEl: Element) => {
 
       // Get the line connecting the top and bottom nodes. As per the DOM, the line is rendered as first child of parent element
       const lineNode = lineNodes[index]; //zsviczian
+
+      if (lineNode?.tagName !== "line") {
+        throw "Line not found";
+      }
+      const startX = Number(lineNode.getAttribute("x1"));
+      const startY = Number(lineNode.getAttribute("y1"));
+
+      const endX = Number(lineNode.getAttribute("x2"));
+      // Make sure lines don't overlap with the nodes, in mermaid it overlaps but isn't visible as its pushed back and containers are non transparent
+      const bottomEllipseNode = bottomNodeElement.find(
+        (node): node is Container => node.type === "ellipse"
+      );
+      if (bottomEllipseNode) {
+        const endY = bottomEllipseNode.y;
+        const line = createLineSkeletonFromSVG(
+          lineNode,
+          startX,
+          startY,
+          endX,
+          endY
+        );
+        lines.push(line);
+      }
+    }
+  });
+
+  return { nodes, lines };
+};
+
+const parseActor_old = (actors: { [key: string]: Actor }, containerEl: Element) => {
+  const actorRootNodes = Array.from(
+    containerEl.querySelectorAll<SVGElement>(".actor")
+  )
+    .filter((node) => node.tagName === "text")
+    .map((actor) => actor.parentElement);
+
+  const nodes: Array<Node[]> = [];
+  const lines: Array<Line> = [];
+  const actorsLength = Object.keys(actors).length;
+  Object.values(actors).forEach((actor, index) => {
+    // For each actor there are two nodes top and bottom which is connected by a line
+    const topRootNode = actorRootNodes[index];
+    const bottomRootNode = actorRootNodes[actorsLength + index];
+
+    if (!topRootNode || !bottomRootNode) {
+      throw "root not found";
+    }
+    const text = actor.description;
+    if (actor.type === "participant") {
+      // creating top actor node element
+      const topNodeElement = createContainerSkeletonFromSVG(
+        topRootNode.firstChild as SVGSVGElement,
+        "rectangle",
+        { id: `${actor.name}-top`, label: { text }, subtype: "actor" }
+      );
+      if (!topNodeElement) {
+        throw "Top Node element not found!";
+      }
+      nodes.push([topNodeElement]);
+
+      // creating bottom actor node element
+      const bottomNodeElement = createContainerSkeletonFromSVG(
+        bottomRootNode.firstChild as SVGSVGElement,
+        "rectangle",
+        { id: `${actor.name}-bottom`, label: { text }, subtype: "actor" }
+      );
+      nodes.push([bottomNodeElement]);
+
+      // Get the line connecting the top and bottom nodes. As per the DOM, the line is rendered as first child of parent element
+      const lineNode = topRootNode.previousElementSibling as SVGLineElement;
+
+      if (lineNode?.tagName !== "line") {
+        throw "Line not found";
+      }
+      const startX = Number(lineNode.getAttribute("x1"));
+      if (!topNodeElement.height) {
+        throw "Top node element height is null";
+      }
+      const startY = topNodeElement.y + topNodeElement.height;
+      // Make sure lines don't overlap with the nodes, in mermaid it overlaps but isn't visible as its pushed back and containers are non transparent
+      const endY = bottomNodeElement.y;
+      const endX = Number(lineNode.getAttribute("x2"));
+      const line = createLineSkeletonFromSVG(
+        lineNode,
+        startX,
+        startY,
+        endX,
+        endY
+      );
+      lines.push(line);
+    } else if (actor.type === "actor") {
+      const topNodeElement = createActorSymbol(topRootNode, text, {
+        id: `${actor.name}-top`,
+      });
+      nodes.push(topNodeElement);
+      const bottomNodeElement = createActorSymbol(bottomRootNode, text, {
+        id: `${actor.name}-bottom`,
+      });
+      nodes.push(bottomNodeElement);
+
+      // Get the line connecting the top and bottom nodes. As per the DOM, the line is rendered as first child of parent element
+      const lineNode = topRootNode.previousElementSibling as SVGLineElement;
 
       if (lineNode?.tagName !== "line") {
         throw "Line not found";
