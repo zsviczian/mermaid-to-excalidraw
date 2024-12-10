@@ -40,7 +40,8 @@ export interface ExcalidrawConfig {
 
 const parseMermaidToExcalidraw = async (
   definition: string,
-  config?: MermaidConfig
+  config?: MermaidConfig,
+  forceSVG: boolean = false, //zsviczian
 ) => {
   const mermaidConfig = config || {};
   const fontSize =
@@ -52,7 +53,7 @@ const parseMermaidToExcalidraw = async (
       // Multiplying by 1.25 to increase the font size by 25% and render correctly in Excalidraw
       fontSize: `${fontSize * 1.25}px`,
     },
-  });
+  }, forceSVG); //zsviczian
   // Only font size supported for excalidraw elements
   const excalidrawElements = graphToExcalidraw(parsedMermaidData, {
     fontSize,

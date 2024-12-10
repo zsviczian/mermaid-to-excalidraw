@@ -44,7 +44,8 @@ const convertSvgToGraphImage = (svgContainer: HTMLDivElement) => {
 
 export const parseMermaid = async (
   definition: string,
-  config: MermaidConfig = MERMAID_CONFIG
+  config: MermaidConfig = MERMAID_CONFIG,
+  forceSVG: boolean = false, //zsviczian
 ): Promise<Flowchart | GraphImage | Sequence | Class> => {
   mermaid.initialize({ ...MERMAID_CONFIG, ...config });
   // Parse the diagram
@@ -64,6 +65,7 @@ export const parseMermaid = async (
   svgContainer.innerHTML = svg;
   svgContainer.id = "mermaid-diagram";
   document.body.appendChild(svgContainer);
+  if(forceSVG) return convertSvgToGraphImage(svgContainer); //zsviczian
   let data;
   switch (diagram.type) {
     case "flowchart-v2": {
