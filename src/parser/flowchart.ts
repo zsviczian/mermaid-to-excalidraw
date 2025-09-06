@@ -11,7 +11,8 @@ import {
   Vertex,
 } from "../interfaces.js";
 
-import { Diagram } from "mermaid/dist/Diagram.js";
+import type { Diagram } from "mermaid/dist/Diagram.js";
+import { DiagramStyleClassDef } from "mermaid/dist/diagram-api/types.js";
 
 export interface Flowchart {
   type: "flowchart";
@@ -74,7 +75,11 @@ const parseSubGraph = (data: any, containerEl: Element): SubGraph => {
   };
 };
 
-const parseVertex = (data: any, containerEl: Element): Vertex | undefined => {
+const parseVertex = (
+  data: any,
+  containerEl: Element,
+  classes: { [key: string]: DiagramStyleClassDef }
+): Vertex | undefined => {
   // Find Vertex element
   const el: SVGSVGElement | null = containerEl.querySelector(
     `[id*="flowchart-${data.id}-"]`
@@ -117,6 +122,7 @@ const parseVertex = (data: any, containerEl: Element): Vertex | undefined => {
     const value = property.split(":")[1].trim();
     containerStyle[key] = value;
   });
+
   const labelStyle: Vertex["labelStyle"] = {};
   labelStyleText?.split(";").forEach((property) => {
     if (!property) {
@@ -128,6 +134,19 @@ const parseVertex = (data: any, containerEl: Element): Vertex | undefined => {
     labelStyle[key] = value;
   });
 
+  if (data.classes) {
+    const classDef = classes[data.classes];
+    if (classDef) {
+      classDef.styles?.forEach((style) => {
+        const [key, value] = style.split(":");
+        containerStyle[key.trim() as CONTAINER_STYLE_PROPERTY] = value.trim();
+      });
+      classDef.textStyles?.forEach((style) => {
+        const [key, value] = style.split(":");
+        labelStyle[key.trim() as LABEL_STYLE_PROPERTY] = value.trim();
+      });
+    }
+  }
   return {
     id: data.id,
     labelType: data.labelType,
@@ -141,18 +160,23 @@ const parseVertex = (data: any, containerEl: Element): Vertex | undefined => {
   };
 };
 
-const parseEdge = (data: any, containerEl: Element): Edge => {
+const parseEdge = (
+  data: any,
+  edgeIndex: number,
+  containerEl: Element
+): Edge => {
   // Find edge element
-  const el: SVGPathElement | null = containerEl.querySelector(
-    `[id*="L-${data.start}-${data.end}"]`
+  const edge = containerEl.querySelector<SVGPathElement>(
+    `[id*="L-${data.start}-${data.end}-${edgeIndex}"]`
   );
-  if (!el) {
+
+  if (!edge) {
     throw new Error("Edge element not found");
   }
 
   // Compute edge position data
-  const position = computeElementPosition(el, containerEl);
-  const edgePositionData = computeEdgePositions(el, position);
+  const position = computeElementPosition(edge, containerEl);
+  const edgePositionData = computeEdgePositions(edge, position);
 
   // Remove irrelevant properties
   data.length = undefined;
@@ -222,14 +246,31 @@ export const parseMermaidFlowChartDiagram = (
   diagram.parse();
 
   // Get mermaid parsed data from parser shared variable `yy`
+  //@ts-ignore
   const mermaidParser = diagram.parser.yy;
   const vertices = mermaidParser.getVertices();
+  const classes = mermaidParser.getClasses();
   Object.keys(vertices).forEach((id) => {
-    vertices[id] = parseVertex(vertices[id], containerEl);
+    vertices[id] = parseVertex(vertices[id], containerEl, classes);
   });
+
+  // Track the count of edges based on the edge id
+  const edgeCountMap = new Map<string, number>();
   const edges = mermaidParser
     .getEdges()
-    .map((data: any) => parseEdge(data, containerEl));
+    .filter((edge: any) => {
+      // Sometimes mermaid parser returns edges which are not present in the DOM hence this is a safety check to only consider edges present in the DOM, issue - https://github.com/mermaid-js/mermaid/issues/5516
+      return containerEl.querySelector(`[id*="L-${edge.start}-${edge.end}"]`);
+    })
+    .map((data: any) => {
+      const edgeId = `${data.start}-${data.end}`;
+
+      const count = edgeCountMap.get(edgeId) || 0;
+      edgeCountMap.set(edgeId, count + 1);
+
+      return parseEdge(data, count, containerEl);
+    });
+
   const subGraphs = mermaidParser
     .getSubGraphs()
     .map((data: any) => parseSubGraph(data, containerEl));
